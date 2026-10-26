@@ -1,91 +1,78 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { useNavigate } from 'react-router-dom';
 
-const SERVERIP = '192.168.1.7';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
-  
+  const [role, setRole] = useState('estudiante');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-        const status = true;
-        const response = await axios.post(`http://${SERVERIP}:5000/api/auth/register`, { username, password, name, role, status });        
-        if(response)
-            alert('Registro exitoso');
-
-        navigate('/');
-    } catch (error) {
-        console.error('Error: ' + error);
-        alert('Fallo el registro');
+      await axios.post(`${API_URL}/api/auth/register`, {
+        username,
+        password,
+        name,
+        role,
+        status: true,
+      });
+      navigate('/login');
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'No se pudo completar el registro');
     }
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center min-vh-100">
-      <div className="card" style={{ width: '18rem' }}>
-        <div className="card-body">
-          <h5 className="card-title text-center mb-4">Registro</h5>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="name" className="form-label">Nombre</label>
-              <input
-                id="name"
-                type="text"
-                className="form-control"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre"
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="role" className="form-label">Rol</label>
-              <input
-                id="rol"
-                type="text"
-                className="form-control"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="Moderador/Estudiante"
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="username" className="form-label">Usuario</label>
-              <input
-                id="username"
-                type="text"
-                className="form-control"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Usuario"
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="password" className="form-label">Contraseña</label>
-              <input
-                id="password"
-                type="password"
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Contraseña"
-                required
-              />
-            </div>            
-            <button type="submit" className="btn btn-primary w-100">Registrar</button>
-          </form>
-        </div>
+    <div className="auth-screen">
+      <div className="auth-card">
+        <p className="brand-kicker">Auralis</p>
+        <h1>Crear cuenta</h1>
+        <p className="auth-copy">El usuario es único. El rol define si entras como estudiante o como moderador de la clase.</p>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="name">Nombre</label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nombre y apellido"
+            required
+          />
+          <label htmlFor="role">Rol</label>
+          <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required>
+            <option value="estudiante">Estudiante</option>
+            <option value="moderador">Moderador</option>
+          </select>
+          <label htmlFor="username">Usuario</label>
+          <input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="usuario.unico"
+            required
+          />
+          <label htmlFor="password">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mínimo 4 caracteres"
+            required
+          />
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" className="btn btn-primary w-100">Registrarme</button>
+        </form>
+        <Link to="/login" className="auth-link">Ya tengo cuenta</Link>
       </div>
     </div>
   );

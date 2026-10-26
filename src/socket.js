@@ -1,12 +1,12 @@
 import { io } from 'socket.io-client';
 
-const SERVERIP = '192.168.1.7';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const socket = io(`http://${SERVERIP}:5000`, {
+const createSocket = () => io(API_URL, {
   transports: ['websocket'],
   auth: {
     token: localStorage.getItem('token')
   }
 });
 
-export default socket;
+export default createSocket;

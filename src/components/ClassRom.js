@@ -2,26 +2,42 @@ import React from 'react';
 import Chat from './Chat';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const ClassRoom = () => {
+const ClassRoom = ({ user, onLogout }) => {
+  const roleLabel = user?.role === 'moderador' ? 'Moderador' : 'Estudiante';
+
   return (
-    <div className="container-fluid mt-4">
-      <h2 className="text-center mb-4">Clase Online</h2>
-      <div className="row">
-        <div className="col-md-6 d-flex justify-content-center align-items-center">
-          <div className="card w-100 h-100 border-0">
-            <div className="card-body p-6">
-              <div className="embed-responsive embed-responsive-16by9 h-100">
-                <iframe width="100%" height="45%" src="https://www.youtube.com/embed/PVoZ86J3tGQ?si=DT0OkvTBRC4XKlmN" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-              </div>
-            </div>
-          </div>
+    <div className="classroom-page">
+      <header className="classroom-bar">
+        <div>
+          <p className="brand-kicker">Auralis</p>
+          <h1>Clase en vivo</h1>
         </div>
-        <div className="col-md-6 d-flex justify-content-center align-items-center p-0">
-          <div className="chat-box-container w-100 h-100">
-            <Chat />
+        <div className="session-meta">
+          <div>
+            <strong>{user?.name}</strong>
+            <span className={`role-pill role-${user?.role}`}>{roleLabel}</span>
           </div>
+          <button type="button" className="btn btn-outline-light btn-sm" onClick={onLogout}>Salir</button>
         </div>
-      </div>
+      </header>
+      <main className="classroom-grid">
+        <section className="video-panel">
+          <div className="panel-heading">
+            <h2>Sesión activa</h2>
+            <p>Introducción a JavaScript. No hay más clases para elegir.</p>
+          </div>
+          <div className="video-frame">
+            <iframe
+              src="https://www.youtube.com/embed/PVoZ86J3tGQ?si=DT0OkvTBRC4XKlmN"
+              title="Transmisión de la clase"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </section>
+        <Chat currentUser={user} />
+      </main>
     </div>
   );
 };

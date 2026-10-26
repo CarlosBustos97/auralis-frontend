@@ -1,79 +1,107 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axiosInstance from '../axiosConfig';
-import socket from "../socket";
+import createSocket from "../socket";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const Chat = () => {
+const Chat = ({ currentUser }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [error, setError] = useState('');
+  const bottomRef = useRef(null);
 
   useEffect(() => {
-    
+    let active = true;
+    const socket = createSocket();
+
+    const upsertMessage = (incoming) => {
+      if (!incoming?._id) return;
+      setMessages((prevMessages) => {
+        if (prevMessages.some((item) => item._id === incoming._id)) return prevMessages;
+        return [...prevMessages, incoming];
+      });
+    };
+
     const fetchMessages = async () => {
       try {
-        const response = await axiosInstance.get('/message/getAll');  
-        setMessages(response.data);
-      } catch (error) {
-        console.error('Error al obtener mensajes:', error);
+        const response = await axiosInstance.get('/message/getAll');
+        if (active) setMessages(response.data);
+      } catch {
+        if (active) setError('No se pudo cargar el chat');
       }
     };
 
     fetchMessages();
-    
-    socket.on('message', (msg) => {
-      setMessages((prevMessages) => [...prevMessages, msg]);
-    });
-    
-    return () => socket.off('message');
+    socket.on('message', upsertMessage);
+
+    return () => {
+      active = false;
+      socket.off('message', upsertMessage);
+      socket.disconnect();
+    };
   }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const userString = localStorage.getItem('user');
-      if (!userString) {
-        console.error('No user found in localStorage');
-        return;
-      }
+    const text = message.trim();
+    if (!text) return;
+    setError('');
 
-      const user = JSON.parse(userString);
-      const userId = user._id;
-      
-      await axiosInstance.post('/message/store', { text: message, created_by: userId, created_at: new Date() });
-      
-      socket.emit('message', { text: message, created_by: userId, created_at: new Date() }); 
+    try {
+      const response = await axiosInstance.post('/message/store', { text });
+      setMessages((prevMessages) => {
+        if (prevMessages.some((item) => item._id === response.data._id)) return prevMessages;
+        return [...prevMessages, response.data];
+      });
       setMessage('');
-    } catch (error) {
-      console.error('Error al enviar el mensaje:', error);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'No se pudo enviar el mensaje');
     }
   };
 
   return (
-    <div className="chat-box bg-light border rounded p-3 d-flex flex-column" style={{ maxWidth: '85%', maxHeight: '45%' }}>
-      <div className="chat-content flex-grow-1 mb-6" style={{ overflowY: 'auto' }}>
-        {
-            messages.map((msg, index) => (
-                <div key={index} className="message mb-2 p-2 border rounded bg-white">
-                    <div className="d-flex justify-content-between mb-1">
-                    <span className="message-author font-weight-bold">{msg.created_by.name}</span>
-                    <span className="message-time text-muted">{new Date(msg.created_at).toLocaleTimeString()}</span>
-                    </div>
-                    <div className="message-body">{msg.text}</div>
-                </div>
-            ))
-        }
+    <section className="chat-panel">
+      <div className="panel-heading">
+        <h2>Chat de la clase</h2>
+        <p>Los mensajes aparecen al instante para todos los participantes.</p>
       </div>
-      <form onSubmit={handleSubmit} className="d-flex">
+      <div className="chat-log">
+        {messages.length === 0 && <p className="chat-empty">Todavía no hay mensajes. Escribe el primero.</p>}
+        {messages.map((msg) => {
+          const author = msg.created_by || {};
+          const isModerator = author.role === 'moderador';
+          const isMine = author._id === currentUser?._id;
+          return (
+            <article key={msg._id} className={`chat-message ${isModerator ? 'is-moderator' : 'is-student'} ${isMine ? 'is-mine' : ''}`}>
+              <header>
+                <strong>{author.name || 'Participante'}</strong>
+                <span className={`role-pill role-${author.role || 'estudiante'}`}>
+                  {isModerator ? 'Moderador' : 'Estudiante'}
+                </span>
+                <time>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+              </header>
+              <p>{msg.text}</p>
+            </article>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+      {error && <p className="form-error">{error}</p>}
+      <form onSubmit={handleSubmit} className="chat-form">
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Escribe un mensaje..."
-          className="form-control mr-2"
+          maxLength={500}
+          aria-label="Mensaje"
         />
         <button type="submit" className="btn btn-primary">Enviar</button>
       </form>
-    </div>
+    </section>
   );
 };
 

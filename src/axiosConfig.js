@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const SERVERIP = '192.168.1.7';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const axiosInstance = axios.create({
-  baseURL: `http://${SERVERIP}:5000/api`,
+  baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   }
