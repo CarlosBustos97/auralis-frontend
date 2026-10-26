@@ -2,6 +2,8 @@
 
 Interfaz de la clase en vivo. Después de iniciar sesión se abre la única clase activa, con el video y el chat.
 
+Repositorio: https://github.com/CarlosBustos97/auralis-frontend
+
 ## Requisitos
 
 - Node.js 18 o superior
